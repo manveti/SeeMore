@@ -23,6 +23,15 @@ namespace SeeMore {
         public FeedArticles articles;
         public HashSet<Guid> deleted;
 
+        public DateTimeOffset due {
+            get {
+                if (this.metadata.lastUpdated == null) {
+                    return DateTimeOffset.MinValue;
+                }
+                return (DateTimeOffset)(this.metadata.lastUpdated) + this.metadata.updateInterval;
+            }
+        }
+
         public Feed(string pathBase, FeedMetadata metadata) {
             this.pathBase = pathBase;
             this.metadata = metadata;
@@ -113,9 +122,17 @@ namespace SeeMore {
             }
         }
 
+        public static FeedMetadata getMetadata(string url) {
+            SyndicationFeed feed;
+            using (XmlReader reader = XmlReader.Create(url)) {
+                feed = SyndicationFeed.Load(reader);
+            }
+            return new FeedMetadata(feed.Title.Text, feed.Description.Text, url);
+        }
+
         public virtual void backLoad() { }
 
-        public virtual void update() {
+        public virtual bool update() {
             bool modified = false;
 
             SyndicationFeed feed;
@@ -166,10 +183,7 @@ namespace SeeMore {
             }
             this.articles.idToGuid = idToGuid;
 
-            // save changes if necessary
-            if (modified) {
-                this.saveArticles();
-            }
+            return modified;
         }
 
         public virtual Article syndicationItemToArticle(SyndicationItem item) {

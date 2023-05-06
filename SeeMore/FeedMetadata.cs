@@ -10,12 +10,14 @@ namespace SeeMore {
         public string name;
         public string description;
         public string url;
+        public byte[] icon;
         public TimeSpan updateInterval;
         public DateTimeOffset? lastUpdated;
         public Guid? collection;
-        //icon?
 
-        public FeedMetadata(string name, string description, string url, TimeSpan? updateInterval = null, Guid? collection = null) {
+        public FeedMetadata(
+            string name, string description, string url, byte[] icon = null, TimeSpan? updateInterval = null, Guid? collection = null
+        ) {
             if (updateInterval == null) {
                 updateInterval = DEFAULT_UPDATE;
             }
@@ -23,6 +25,7 @@ namespace SeeMore {
             this.name = name;
             this.description = description;
             this.url = url;
+            this.icon = icon;
             this.updateInterval = (TimeSpan)(updateInterval);
             this.lastUpdated = null;
             this.collection = collection;

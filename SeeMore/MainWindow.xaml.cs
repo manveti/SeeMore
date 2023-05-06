@@ -21,12 +21,10 @@ namespace SeeMore {
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window {
-        private CollectionFeedView selected_coll = null;
-        private List<ArticleView> coll_articles = null;
-        private ArticleView selected_art = null;
+        private ViewManager view_manager;
 
         public MainWindow() {
-            InitializeComponent();
+            this.InitializeComponent();
         }
 
         //TODO: menu handlers
@@ -46,51 +44,31 @@ namespace SeeMore {
             }
         }
 
-        private int artview_compare(ArticleView x, ArticleView y) {
-            int result = y.article.timestamp.CompareTo(x.article.timestamp);
-            if (result != 0) {
-                return result;
-            }
-            result = x.title.CompareTo(y.title);
-            if (result != 0) {
-                return result;
-            }
-            return x.description.CompareTo(y.description);
-        }
-
         private void coll_list_sel_changed(object sender, RoutedEventArgs e) {
             CollectionFeedView sel = this.coll_list.SelectedItem as CollectionFeedView;
-            if (sel == this.selected_coll) {
+            if (!this.view_manager.selectCollection(sel)) {
                 return;
             }
-            this.selected_coll = sel;
             this.coll_edit_but.IsEnabled = (sel != null);
             this.coll_move_but.IsEnabled = (sel != null);
             this.coll_rem_but.IsEnabled = (sel != null);
             this.coll_update_but.IsEnabled = (sel != null);
-            //TODO: collection thumbnail
+            this.coll_icon.Source = sel?.icon;
             this.coll_name_box.Content = (sel == null ? "" : sel.name);
             this.coll_desc_box.Text = (sel == null ? "" : sel.description);
-            //TODO: coll_updated_box
-            List<ArticleView> articles = new List<ArticleView>();
-            this.populate_articles(articles, sel);
-            articles.Sort((x, y) => this.artview_compare(x, y));
-            this.coll_articles = articles;
-            this.art_list.ItemsSource = articles;
+            FeedView feed = sel as FeedView;
+            DateTimeOffset? updated = feed?.feed?.metadata?.lastUpdated;
+            this.coll_updated_box.Content = (updated == null ? "" : ((DateTimeOffset)updated).ToString("G"));
         }
 
         //TODO: coll_add, coll_edit, coll_move, coll_remove, coll_update
 
         private void art_list_sel_changed(object sender, RoutedEventArgs e) {
-            ArticleView sel = null;
-            int selIdx = this.art_list.SelectedIndex;
-            if ((selIdx >= 0) && (this.coll_articles != null) && (selIdx < this.coll_articles.Count)) {
-                sel = this.coll_articles[selIdx];
-            }
-            if (sel == this.selected_art) {
+            ArticleView prevSel = this.view_manager.selectedArt;
+            ArticleView sel = this.view_manager.selectArticle(this.art_list.SelectedIndex);
+            if (sel == prevSel) {
                 return;
             }
-            this.selected_art = sel;
             //TODO: feed thumbnail, feed_name_box
             this.art_title_box.Content = (sel == null ? "" : sel.title);
             this.art_timestamp_box.Content = (sel == null ? "" : sel.timestamp);

@@ -15,9 +15,10 @@ namespace SeeMore {
             string url,
             string channelId,
             string uploadsId,
+            byte[] icon = null,
             TimeSpan? updateInterval = null,
             Guid? collection = null
-        ) : base(name, description, url, updateInterval, collection) {
+        ) : base(name, description, url, icon, updateInterval, collection) {
             this.channelId = channelId;
             this.uploadsId = uploadsId;
         }
@@ -26,7 +27,7 @@ namespace SeeMore {
     [Serializable]
     public class YouTubeArticle : Article {
         public string videoId;
-        //thumbnail
+        //TODO: thumbnail
 
         public YouTubeArticle(
             string id, DateTimeOffset timestamp, string title, string description, string url, string videoId

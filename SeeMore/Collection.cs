@@ -5,12 +5,13 @@ namespace SeeMore {
     public class Collection {
         public string name;
         public string description;
-        //TODO: thumbnail
+        public byte[] icon;
         public Guid? parent;
 
-        public Collection(string name, string description, Guid? parent = null) {//TODO: thumbnail
+        public Collection(string name, string description, byte[] icon = null, Guid? parent = null) {
             this.name = name;
             this.description = description;
+            this.icon = icon;
             this.parent = parent;
         }
     }

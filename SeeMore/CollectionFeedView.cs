@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Windows.Media.Imaging;
 
 namespace SeeMore {
     public abstract class CollectionFeedView : INotifyPropertyChanged {
-        public bool _is_selected = false;
+        protected bool _is_selected = false;
         public Guid guid;
-        //TODO: count
-        public ObservableCollection<CollectionFeedView> _children;
+        protected BitmapSource _icon;
+        protected int _count = 0;
+        protected ObservableCollection<CollectionFeedView> _children;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -27,23 +30,45 @@ namespace SeeMore {
                 this.NotifyPropertyChanged();
             }
         }
-        //public Guid ident { get => this._ident; }
-        //public CollectionFeedView ident { get => this; }
         public CollectionFeedView ident { get => this; }
         public abstract string name { get; set; }
         public abstract string description { get; }
-        //TODO: thumbnail
-        //TODO: count
+        public BitmapSource icon {
+            get => this._icon;
+            set {
+                this._icon = value;
+                this.NotifyPropertyChanged();
+            }
+        }
+        protected abstract byte[] raw_icon { get; set; }
+        public int count {
+            get => this._count;
+            set {
+                this._count = value;
+                this.NotifyPropertyChanged();
+            }
+        }
         public ObservableCollection<CollectionFeedView> children { get => this._children; }
 
-        public CollectionFeedView(Guid guid) { //TODO: count?, children?
+        public CollectionFeedView(Guid guid) {
             this.guid = guid;
             this._children = null;
+        }
+
+        protected void set_icon() {
+            if (this.raw_icon == null) {
+                this.icon = null;
+                return;
+            }
+            using (MemoryStream stream = new MemoryStream(this.raw_icon)) {
+                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                this.icon = decoder.Frames[0];
+            }
         }
     }
 
     public class CollectionView : CollectionFeedView {
-        public bool _is_expanded = true;
+        protected bool _is_expanded = true;
         public Collection collection;
 
         public override bool is_expanded {
@@ -61,11 +86,18 @@ namespace SeeMore {
             }
         }
         public override string description { get => this.collection.description; }
-        //TODO: thumbnail
+        protected override byte[] raw_icon {
+            get => this.collection.icon;
+            set {
+                this.collection.icon = value;
+                this.set_icon();
+            }
+        }
 
-        public CollectionView(Guid ident, Collection collection) : base(ident) { //TODO: count?, children?
+        public CollectionView(Guid ident, Collection collection) : base(ident) {
             this.collection = collection;
             this._children = new ObservableCollection<CollectionFeedView>();
+            this.set_icon();
         }
     }
 
@@ -80,10 +112,17 @@ namespace SeeMore {
             }
         }
         public override string description { get => this.feed.metadata.description; }
-        //TODO: thumbnail
+        protected override byte[] raw_icon {
+            get => this.feed.metadata.icon;
+            set {
+                this.feed.metadata.icon = value;
+                this.set_icon();
+            }
+        }
 
-        public FeedView(Guid ident, Feed feed) : base(ident) { //TODO: count?
+        public FeedView(Guid ident, Feed feed) : base(ident) {
             this.feed = feed;
+            this.set_icon();
         }
     }
 }
