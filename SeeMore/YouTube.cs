@@ -22,22 +22,29 @@ namespace SeeMore {
             this.channelId = channelId;
             this.uploadsId = uploadsId;
         }
+
+        public override Feed constructFeed(string pathBase) {
+            return new YouTubeFeed(pathBase, this);
+        }
     }
 
     [Serializable]
     public class YouTubeArticle : Article {
         public string videoId;
-        //TODO: thumbnail
+        public byte[] thumbnail;
 
         public YouTubeArticle(
-            string id, DateTimeOffset timestamp, string title, string description, string url, string videoId
+            string id, DateTimeOffset timestamp, string title, string description, string url, string videoId, byte[] thumbnail = null
         ) : base(id, timestamp, title, description, url) {
             this.videoId = videoId;
+            this.thumbnail = thumbnail;
         }
     }
 
     public class YouTubeFeed : Feed {
         public YouTubeFeed(string pathBase, YouTubeChannelMetadata metadata) : base(pathBase, metadata) { }
+
+        //TODO: getMetadata?, also metadata from channel id and/or from video url(and/or id)
 
         public override void backLoad() { }//TODO: load prior content in subclasses where that makes sense
         //note that rss id is "yt:video:${videoId}"
@@ -46,6 +53,7 @@ namespace SeeMore {
             Article article = base.syndicationItemToArticle(item);
             string description = article.description;
             string videoId = null;
+            byte[] thumbnail = null;
             foreach (SyndicationElementExtension ext in item.ElementExtensions) {
                 XmlElement element = ext.GetObject<XmlElement>();
                 switch (element.Name) {
@@ -58,7 +66,7 @@ namespace SeeMore {
                     if ((children != null) && (children.Count > 0)) {
                         XmlNode urlNode = children[0].Attributes.GetNamedItem("url");
                         if (urlNode != null) {
-                            //TODO: thumbnail url = urlNode.Value;
+                            thumbnail = ViewManager.downloadImage(urlNode.Value);
                         }
                     }
                     break;
@@ -67,10 +75,7 @@ namespace SeeMore {
                     break;
                 }
             }
-            //TODO: thumbnail
-            return new YouTubeArticle(
-                article.id, article.timestamp, article.title, description, article.url, videoId
-            );
+            return new YouTubeArticle(article.id, article.timestamp, article.title, description, article.url, videoId, thumbnail);
         }
     }
 }

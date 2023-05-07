@@ -5,12 +5,14 @@ using System.IO;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media.Imaging;
 using System.Xml;
 
 namespace SeeMore {
     public class ViewManager {
         public static readonly HttpClient httpClient;
-        private MainWindow window;
+        private readonly MainWindow window;
         private string dataDir;
         public object indexLock;
         public FeedsIndex index;
@@ -54,17 +56,32 @@ namespace SeeMore {
         }
 
         public static byte[] downloadImage(string url) {
-            return httpClient.GetByteArrayAsync(url).Result;
+            if (url == null) {
+                return null;
+            }
+            try {
+                return httpClient.GetByteArrayAsync(url).Result;
+            }
+            catch (Exception e) when ((e is FormatException) || (e is HttpRequestException)) {
+                return null;
+            }
         }
 
-        public string getIndexPath(string dataDir = null) {
+        public static BitmapSource getImageSource(byte[] image) {
+            using (MemoryStream stream = new MemoryStream(image)) {
+                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                return decoder.Frames[0];
+            }
+        }
+
+        private string getIndexPath(string dataDir = null) {
             if (dataDir == null) {
                 dataDir = this.dataDir;
             }
             return Path.Join(dataDir, "index.dat");
         }
 
-        public string getFeedPath(Guid guid, string dataDir = null) {
+        private string getFeedPath(Guid guid, string dataDir = null) {
             if (dataDir == null) {
                 dataDir = this.dataDir;
             }
@@ -72,16 +89,21 @@ namespace SeeMore {
         }
 
         private void populateCounts(CollectionFeedView coll) {
-            FeedView feedView = coll as FeedView;
-            if (feedView != null) {
-                coll.count = feedView.feed.articles.articles.Count;
+            int count = 0;
+            if (coll is FeedView feedView) {
+                foreach (Guid key in feedView.feed.articles.articles.Keys) {
+                    if (!feedView.feed.deleted.Contains(key)) {
+                        count += 1;
+                    }
+                }
+                coll.count = count;
                 return;
             }
-            coll.count = 0;
             foreach (CollectionFeedView child in coll.children) {
                 this.populateCounts(child);
                 coll.count += child.count;
             }
+            coll.count = count;
         }
 
         public void load(string dataDir) {
@@ -181,7 +203,7 @@ namespace SeeMore {
             }
         }
 
-        //TODO: update feed
+        //TODO: update feed: upd=feed.getUpdateArticles(); lock { mod=feed.applyUpdate(upd); save if mod }
 
         private int feedUpdateCompare(Feed x, Feed y) {
             int result = x.due.CompareTo(y.due);
@@ -227,10 +249,24 @@ namespace SeeMore {
 
         //TODO: update loop
 
+        public CollectionFeedView getCollectionFeedView(Guid? guid) {
+            if (guid == null) {
+                return null;
+            }
+            lock (this.indexLock) {
+                if (this.guidToCollectionFeedView.ContainsKey((Guid)guid)) {
+                    return this.guidToCollectionFeedView[(Guid)guid];
+                }
+            }
+            return null;
+        }
+
         private void populateArticles(List<ArticleView> articles, CollectionFeedView coll) {
-            FeedView feed = coll as FeedView;
-            if (feed != null) {
+            if (coll is FeedView feed) {
                 foreach (Guid artId in feed.feed.articles.articles.Keys) {
+                    if (feed.feed.deleted.Contains(artId)) {
+                        continue;
+                    }
                     Article art = feed.feed.articles.articles[artId];
                     articles.Add(new ArticleView(feed.guid, artId, art));
                 }
@@ -286,7 +322,7 @@ namespace SeeMore {
                     parent = this.guidToCollectionFeedView[(Guid)(coll.parent)];
                 }
                 List<CollectionFeedView> siblings = new List<CollectionFeedView>(parent.children);
-                int insertIdx = siblings.FindIndex((x) => (x is FeedView) ||(x.name.CompareTo(coll.name) > 0));
+                int insertIdx = siblings.FindIndex((x) => (x is FeedView) || (x.name.CompareTo(coll.name) > 0));
                 if (insertIdx < 0) {
                     insertIdx = siblings.Count;
                 }
@@ -298,10 +334,11 @@ namespace SeeMore {
 
         public Guid addFeed(FeedMetadata metadata) {
             Guid guid = Guid.NewGuid();
-            Feed feed = new Feed(this.getFeedPath(guid), metadata);
+            Feed feed = metadata.constructFeed(this.getFeedPath(guid));
             FeedView feedView = new FeedView(guid, feed);
             lock (this.indexLock) {
                 this.index.feeds[guid] = metadata;
+                this.guidToCollectionFeedView[guid] = feedView;
                 this.guidToFeed[guid] = feed;
                 CollectionFeedView parent = this.collectionViews;
                 if (metadata.collection != null) {
@@ -327,8 +364,25 @@ namespace SeeMore {
                 if ((idx >= 0) && (this.collectionArticles != null) && (idx < this.collectionArticles.Count)) {
                     sel = this.collectionArticles[idx];
                 }
+                if (sel == this.selectedArt) {
+                    return sel;
+                }
                 this.selectedArt = sel;
             }
+
+            // display article contents
+            this.window.hide_article_content();
+            if (sel == null) {
+                return sel;
+            }
+            if (sel.article is YouTubeArticle ytArt) {
+                this.window.content_box_image.image.Source = ViewManager.getImageSource(ytArt.thumbnail);
+                this.window.content_box_image.desc_box.Text = ytArt.description;
+                this.window.content_box_image.Visibility = Visibility.Visible;
+                return sel;
+            }
+            this.window.content_box_default.desc_box.Text = sel.article.description;
+            this.window.content_box_default.Visibility = Visibility.Visible;
             return sel;
         }
     }

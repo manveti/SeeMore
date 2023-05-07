@@ -30,8 +30,7 @@ namespace SeeMore {
         //TODO: menu handlers
 
         private void populate_articles(List<ArticleView> articles, CollectionFeedView coll) {
-            FeedView feed = coll as FeedView;
-            if (feed != null) {
+            if (coll is FeedView feed) {
                 foreach (Guid artId in feed.feed.articles.articles.Keys) {
                     Article art = feed.feed.articles.articles[artId];
                     articles.Add(new ArticleView(feed.guid, artId, art));
@@ -69,15 +68,22 @@ namespace SeeMore {
             if (sel == prevSel) {
                 return;
             }
-            //TODO: feed thumbnail, feed_name_box
+            CollectionFeedView feedView = this.view_manager.getCollectionFeedView(sel?.feed);
+            this.feed_icon.Source = feedView?.icon;
+            this.feed_name_box.Content = (feedView == null ? "" : feedView.name);
             this.art_title_box.Content = (sel == null ? "" : sel.title);
             this.art_timestamp_box.Content = (sel == null ? "" : sel.timestamp);
-            //TODO: article contents
             this.art_open_but.IsEnabled = (sel != null);
             this.art_del_but.IsEnabled = (sel != null);
         }
 
         //TODO: art_open, art_del
+
+        public void hide_article_content() {
+            this.content_box_default.Visibility = Visibility.Collapsed;
+            this.content_box_image.Visibility = Visibility.Collapsed;
+            //TODO: other content boxes
+        }
 
         //TODO: other handlers
     }

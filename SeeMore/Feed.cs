@@ -127,19 +127,19 @@ namespace SeeMore {
             using (XmlReader reader = XmlReader.Create(url)) {
                 feed = SyndicationFeed.Load(reader);
             }
-            return new FeedMetadata(feed.Title.Text, feed.Description.Text, url);
+            byte[] icon = ViewManager.downloadImage(feed.ImageUrl.AbsoluteUri);
+            return new FeedMetadata(feed.Title.Text, feed.Description.Text, url, icon);
         }
 
         public virtual void backLoad() { }
 
-        public virtual bool update() {
-            bool modified = false;
+        public FeedArticles getUpdateArticles() {
+            FeedArticles updateArticles = new FeedArticles();
 
             SyndicationFeed feed;
             using (XmlReader reader = XmlReader.Create(this.metadata.url)) {
                 feed = SyndicationFeed.Load(reader);
             }
-            Dictionary<string, Guid> idToGuid = new Dictionary<string, Guid>();
             foreach (SyndicationItem item in feed.Items) {
                 Guid guid = Guid.NewGuid();
 
@@ -147,8 +147,8 @@ namespace SeeMore {
                 if (this.articles.idToGuid.ContainsKey(item.Id)) {
                     guid = this.articles.idToGuid[item.Id];
                     // maintain reference to deleted articles still in the feed
-                    idToGuid[item.Id] = guid;
-                    if (!this.articles.articles.ContainsKey(guid)) {
+                    updateArticles.idToGuid[item.Id] = guid;
+                    if ((this.deleted.Contains(guid)) || (!this.articles.articles.ContainsKey(guid))) {
                         continue;
                     }
                     Article existingArticle = this.articles.articles[guid];
@@ -159,29 +159,40 @@ namespace SeeMore {
 
                 // add article
                 Article article = this.syndicationItemToArticle(item);
-                this.articles.articles[guid] = article;
-                idToGuid[item.Id] = guid;
-                modified = true;
+                updateArticles.articles[guid] = article;
+                updateArticles.idToGuid[item.Id] = guid;
             }
 
             this.metadata.lastUpdated = DateTimeOffset.UtcNow;
 
-            // rebuild idToGuid for all existing articles (plus deleted ones added above)
+            return updateArticles;
+        }
+
+        public bool applyUpdate(FeedArticles updateArticles) {
+            // NOTE: only call this function from a locked context
+            bool modified = updateArticles.articles.Count > 0;
+
+            // add pre-existing articles to idToGuid
+            HashSet<Guid> removeArticles = new HashSet<Guid>();
             foreach (Guid key in this.articles.articles.Keys) {
-                idToGuid[this.articles.articles[key].id] = key;
-            }
-            if (idToGuid.Count != this.articles.idToGuid.Count) {
-                modified = true;
-            }
-            else {
-                foreach (string key in idToGuid.Keys) {
-                    if ((!this.articles.idToGuid.ContainsKey(key)) || (idToGuid[key] != this.articles.idToGuid[key])) {
-                        modified = true;
-                        break;
-                    }
+                if (this.deleted.Contains(key)) {
+                    removeArticles.Add(key);
+                    modified = true;
+                }
+                else {
+                    updateArticles.idToGuid[this.articles.articles[key].id] = key;
                 }
             }
-            this.articles.idToGuid = idToGuid;
+            // prune deleted articles that aren't in the feed anymore
+            foreach (Guid key in removeArticles) {
+                this.articles.articles.Remove(key);
+            }
+
+            // add new articles
+            foreach (Guid key in updateArticles.articles.Keys) {
+                this.articles.articles[key] = updateArticles.articles[key];
+            }
+            this.articles.idToGuid = updateArticles.idToGuid;
 
             return modified;
         }
@@ -189,7 +200,7 @@ namespace SeeMore {
         public virtual Article syndicationItemToArticle(SyndicationItem item) {
             string url = null;
             if ((item.Links != null) && (item.Links.Count > 0)) {
-                url = item.Links[0].Uri.ToString();
+                url = item.Links[0].Uri.AbsoluteUri;
             }
             return new Article(item.Id, item.LastUpdatedTime, item.Title?.Text, item.Summary?.Text, url);
         }

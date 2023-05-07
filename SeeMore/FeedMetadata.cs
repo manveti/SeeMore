@@ -30,5 +30,9 @@ namespace SeeMore {
             this.lastUpdated = null;
             this.collection = collection;
         }
+
+        public virtual Feed constructFeed(string pathBase) {
+            return new Feed(pathBase, this);
+        }
     }
 }

@@ -330,7 +330,7 @@
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" MaxHeight="24"/>
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" Margin="2" Text="{Binding title, Mode=OneWay}"/>
@@ -351,27 +351,33 @@
         <!-- Right panel: article contents -->
         <Grid Grid.Row="1" Grid.Column="4">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" MaxWidth="24"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" MaxHeight="24"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="1*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <!--feed thumbnail-->
+            <Image Grid.Row="0" Grid.Column="0" Margin="1" Name="feed_icon"/>
             <Label Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="feed_name_box"/>
+            <Label Grid.Row="0" Grid.Column="3" Margin="1" Name="art_timestamp_box"/>
 
-            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="1" Name="art_title_box"/>
-            <Label Grid.Row="1" Grid.Column="2" Margin="1" Name="art_timestamp_box"/>
-            
+            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" Name="art_title_box"/>
+
+            <local:ArticleControl Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" x:Name="content_box_default"
+                Visibility="Collapsed"/>
+            <local:ArticleControlImage Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" x:Name="content_box_image"
+                Visibility="Collapsed"/>
             <!--custom content here-->
 
-            <Button Grid.Row="3" Grid.Column="0" Margin="1" Padding="1" Name="art_open_but" Content="Open in Browser" IsEnabled="False"/><!--click-->
-            <Button Grid.Row="3" Grid.Column="2" Margin="1" Padding="1" Name="art_del_but" Content="Delete" IsEnabled="False"/><!--click-->
+            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="1" Padding="1" Name="art_open_but" Content="Open in Browser"
+                IsEnabled="False"/><!--click-->
+            <Button Grid.Row="3" Grid.Column="3" Margin="1" Padding="1" Name="art_del_but" Content="Delete" IsEnabled="False"/><!--click-->
         </Grid>
     </Grid>
 </Window>

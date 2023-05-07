@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
 
@@ -60,10 +59,7 @@ namespace SeeMore {
                 this.icon = null;
                 return;
             }
-            using (MemoryStream stream = new MemoryStream(this.raw_icon)) {
-                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-                this.icon = decoder.Frames[0];
-            }
+            this.icon = ViewManager.getImageSource(this.raw_icon);
         }
     }
 
