@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,6 +18,23 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace SeeMore {
+    public class SizeConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            double ratio = (double)parameter;
+            if (ratio < 0) {
+                ratio = 0;
+            }
+            if (ratio > 1) {
+                ratio = 1;
+            }
+            return ratio * (double)value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            throw new NotImplementedException();
+        }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>

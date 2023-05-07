@@ -3,15 +3,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:local="clr-namespace:SeeMore"
              mc:Ignorable="d" 
              d:DesignWidth="200" d:DesignHeight="600">
-    <Grid>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <local:SizeConverter x:Key="SizeConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Name="grid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto">
+                <RowDefinition.MaxHeight>
+                    <Binding ElementName="grid" Path="ActualHeight" Converter="{StaticResource SizeConverter}">
+                        <Binding.ConverterParameter>
+                            <sys:Double>0.7</sys:Double>
+                        </Binding.ConverterParameter>
+                    </Binding>
+                </RowDefinition.MaxHeight>
+            </RowDefinition>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
 

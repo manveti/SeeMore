@@ -68,6 +68,9 @@ namespace SeeMore {
         }
 
         public static BitmapSource getImageSource(byte[] image) {
+            if (image == null) {
+                return null;
+            }
             using (MemoryStream stream = new MemoryStream(image)) {
                 BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                 return decoder.Frames[0];
@@ -373,6 +376,12 @@ namespace SeeMore {
             // display article contents
             this.window.hide_article_content();
             if (sel == null) {
+                return sel;
+            }
+            if (sel.article is ImageArticle imgArt) {
+                this.window.content_box_image.image.Source = ViewManager.getImageSource(imgArt.image);
+                this.window.content_box_image.desc_box.Text = imgArt.description;
+                this.window.content_box_image.Visibility = Visibility.Visible;
                 return sel;
             }
             if (sel.article is YouTubeArticle ytArt) {
