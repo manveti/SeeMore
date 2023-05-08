@@ -127,8 +127,8 @@ namespace SeeMore {
             using (XmlReader reader = XmlReader.Create(url)) {
                 feed = SyndicationFeed.Load(reader);
             }
-            byte[] icon = ViewManager.downloadImage(feed.ImageUrl.AbsoluteUri);
-            return new FeedMetadata(feed.Title.Text, feed.Description.Text, url, icon);
+            byte[] icon = ViewManager.downloadImage(feed.ImageUrl?.AbsoluteUri);
+            return new FeedMetadata(feed.Title?.Text, feed.Description?.Text, url, icon);
         }
 
         public virtual void backLoad() { }
@@ -198,11 +198,19 @@ namespace SeeMore {
         }
 
         public virtual Article syndicationItemToArticle(SyndicationItem item) {
+            DateTimeOffset timestamp = item.LastUpdatedTime;
+            string description = item.Summary?.Text;
             string url = null;
+            if (item.PublishDate > timestamp) {
+                timestamp = item.PublishDate;
+            }
+            if ((item.Content is TextSyndicationContent txtContent) && (txtContent.Text != null) && (txtContent.Text.Length > 0)) {
+                description = txtContent.Text;
+            }
             if ((item.Links != null) && (item.Links.Count > 0)) {
                 url = item.Links[0].Uri.AbsoluteUri;
             }
-            return new Article(item.Id, item.LastUpdatedTime, item.Title?.Text, item.Summary?.Text, url);
+            return new Article(item.Id, timestamp, item.Title?.Text, description, url);
         }
     }
 }

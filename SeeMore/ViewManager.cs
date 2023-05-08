@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Xml;
 
@@ -361,6 +362,15 @@ namespace SeeMore {
 
         //TODO: editCollectionFeed, moveCollectionFeed, removeCollectionFeed
 
+        public static void set_browser_contents(WebBrowser browser, string contents) {
+            if ((contents == null) || (contents.Length <= 0)) {
+                browser.Navigate("about:blank");
+            }
+            else {
+                browser.NavigateToString(contents);
+            }
+        }
+
         public ArticleView selectArticle(int idx) {
             ArticleView sel = null;
             lock (this.indexLock) {
@@ -376,6 +386,11 @@ namespace SeeMore {
             // display article contents
             this.window.hide_article_content();
             if (sel == null) {
+                return sel;
+            }
+            if (sel.article is HtmlArticle htmlArt) {
+                ViewManager.set_browser_contents(this.window.content_box_html.content_browser, htmlArt.description);
+                this.window.content_box_html.Visibility = Visibility.Visible;
                 return sel;
             }
             if (sel.article is ImageArticle imgArt) {

@@ -99,6 +99,7 @@ namespace SeeMore {
 
         public void hide_article_content() {
             this.content_box_default.Visibility = Visibility.Collapsed;
+            this.content_box_html.Visibility = Visibility.Collapsed;
             this.content_box_image.Visibility = Visibility.Collapsed;
             //TODO: other content boxes
         }

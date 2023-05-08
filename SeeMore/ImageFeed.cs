@@ -34,34 +34,19 @@ namespace SeeMore {
             return new ImageFeedMetadata(Feed.getMetadata(url));
         }
 
-        public virtual string syndicationItemToDescription(SyndicationItem item) {
-            if ((item.Content is TextSyndicationContent txtContent) && (txtContent.Text != null) && (txtContent.Text.Length > 0)) {
-                return txtContent.Text;
-            }
-            return null;
-        }
-
-        public virtual byte[] syndicationItemToImage(SyndicationItem item) {
+        public override Article syndicationItemToArticle(SyndicationItem item) {
+            Article article = base.syndicationItemToArticle(item);
+            byte[] image = null;
             foreach (SyndicationElementExtension ext in item.ElementExtensions) {
                 XmlElement element = ext.GetObject<XmlElement>();
                 if (element.Name == "media:thumbnail") {
                     XmlNode urlNode = element.Attributes.GetNamedItem("url");
                     if (urlNode != null) {
-                        return ViewManager.downloadImage(urlNode.Value);
+                        image = ViewManager.downloadImage(urlNode.Value);
                     }
                 }
             }
-            return null;
-        }
-
-        public override Article syndicationItemToArticle(SyndicationItem item) {
-            Article article = base.syndicationItemToArticle(item);
-            string description = this.syndicationItemToDescription(item);
-            if (description == null) {
-                description = article.description;
-            }
-            byte[] image = this.syndicationItemToImage(item);
-            return new ImageArticle(article.id, article.timestamp, article.title, description, article.url, image);
+            return new ImageArticle(article.id, article.timestamp, article.title, article.description, article.url, image);
         }
     }
 }

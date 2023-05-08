@@ -18,18 +18,19 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto">
-                <RowDefinition.MaxHeight>
-                    <Binding ElementName="grid" Path="ActualHeight" Converter="{StaticResource SizeConverter}">
-                        <Binding.ConverterParameter>
-                            <sys:Double>0.7</sys:Double>
-                        </Binding.ConverterParameter>
-                    </Binding>
-                </RowDefinition.MaxHeight>
             </RowDefinition>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
 
-        <Image Grid.Row="0" Grid.Column="0" Margin="1" Name="image"/>
+        <Image Grid.Row="0" Grid.Column="0" Margin="1" Name="image">
+            <Image.MaxHeight>
+                <Binding ElementName="grid" Path="ActualHeight" Converter="{StaticResource SizeConverter}">
+                    <Binding.ConverterParameter>
+                        <sys:Double>0.7</sys:Double>
+                    </Binding.ConverterParameter>
+                </Binding>
+            </Image.MaxHeight>
+        </Image>
 
         <ScrollViewer Grid.Row="1" Grid.Column="0" Margin="1">
             <TextBlock Name="desc_box" TextWrapping="Wrap"/>

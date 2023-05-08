@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SeeMore"
         mc:Ignorable="d"
-        Title="See-More" Width="1000" Height="800">
+        Title="See-More" Width="1600" Height="800">
     <Window.Resources>
         <SolidColorBrush x:Key="TreeViewItem.TreeArrow.Static.Stroke" Color="#FF818181"/>
         <SolidColorBrush x:Key="TreeViewItem.TreeArrow.Static.Fill" Color="#FFFFFFFF"/>
@@ -235,9 +235,9 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3*"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="4*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -370,6 +370,8 @@
             <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" Name="art_title_box"/>
 
             <local:ArticleControl Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" x:Name="content_box_default"
+                Visibility="Collapsed"/>
+            <local:ArticleControlHtml Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" x:Name="content_box_html"
                 Visibility="Collapsed"/>
             <local:ArticleControlImage Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="1" x:Name="content_box_image"
                 Visibility="Collapsed"/>
