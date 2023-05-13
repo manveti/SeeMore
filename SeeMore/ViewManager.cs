@@ -12,7 +12,6 @@ using System.Xml;
 
 namespace SeeMore {
     public class ViewManager {
-        public static readonly HttpClient httpClient;
         private readonly MainWindow window;
         private string dataDir;
         public object indexLock;
@@ -24,10 +23,6 @@ namespace SeeMore {
         public CollectionFeedView selectedColl = null;
         private List<ArticleView> collectionArticles = null;
         public ArticleView selectedArt = null;
-
-        static ViewManager() {
-            httpClient = new HttpClient();
-        }
 
         public ViewManager(MainWindow window, string dataDir) {
             this.window = window;
@@ -53,18 +48,6 @@ namespace SeeMore {
                 this.collectionArticles = null;
                 this.selectedArt = null;
                 this.window.coll_list.ItemsSource = new ObservableCollection<CollectionFeedView> { this.collectionViews };
-            }
-        }
-
-        public static byte[] downloadImage(string url) {
-            if (url == null) {
-                return null;
-            }
-            try {
-                return httpClient.GetByteArrayAsync(url).Result;
-            }
-            catch (Exception e) when ((e is FormatException) || (e is HttpRequestException)) {
-                return null;
             }
         }
 
@@ -299,8 +282,8 @@ namespace SeeMore {
                 if (sel == this.selectedColl) {
                     return false;
                 }
+                this.selectedColl = sel;
                 if (sel == null) {
-                    this.selectedColl = null;
                     this.collectionArticles = null;
                     this.selectedArt = null;
                     this.window.art_list.ItemsSource = null;
@@ -362,7 +345,7 @@ namespace SeeMore {
 
         //TODO: editCollectionFeed, moveCollectionFeed, removeCollectionFeed
 
-        public static void set_browser_contents(WebBrowser browser, string contents) {
+        public static void setBrowserContents(WebBrowser browser, string contents) {
             if ((contents == null) || (contents.Length <= 0)) {
                 browser.Navigate("about:blank");
             }
@@ -389,7 +372,7 @@ namespace SeeMore {
                 return sel;
             }
             if (sel.article is HtmlArticle htmlArt) {
-                ViewManager.set_browser_contents(this.window.content_box_html.content_browser, htmlArt.description);
+                ViewManager.setBrowserContents(this.window.content_box_html.content_browser, htmlArt.description);
                 this.window.content_box_html.Visibility = Visibility.Visible;
                 return sel;
             }
@@ -409,5 +392,224 @@ namespace SeeMore {
             this.window.content_box_default.Visibility = Visibility.Visible;
             return sel;
         }
+
+        public void addItem() {
+            AddEditWindow dlg = new AddEditWindow("Add...");
+            dlg.Owner = this.window;
+            dlg.type_box.SelectedValue = AddEditWindow.TYPE_COLLECTION;
+            dlg.interval_box.Text = FeedMetadata.DEFAULT_UPDATE.ToString();
+            Guid? parentGuid = null;
+            if ((this.selectedColl != null) && (this.selectedColl is CollectionView)) {
+                parentGuid = this.selectedColl.guid;
+            }
+            CollectionView collSnapshot;
+            lock (this.indexLock) {
+                collSnapshot = this.collectionViews.copy_collections(parentGuid);
+            }
+            if (parentGuid == null) {
+                collSnapshot.is_selected = true;
+            }
+            dlg.collections_lst.ItemsSource = new ObservableCollection<CollectionFeedView> { collSnapshot };
+            dlg.ShowDialog();
+            if (!dlg.valid) {
+                return;
+            }
+
+            string selType = (string)(dlg.type_box.SelectedValue);
+            string url = dlg.url_box.Text;
+            string name = dlg.name_box.Text;
+            //TODO: validate name
+            string desc = dlg.desc_box.Text;
+            byte[] icon = dlg.icon;
+            TimeSpan? updateInterval = null;
+            Guid? parent = null;
+            CollectionFeedView selParent = dlg.collections_lst.SelectedItem as CollectionFeedView;
+            if ((selParent != null) && (selParent != collSnapshot)) {
+                parent = selParent.guid;
+            }
+
+            if (selType != AddEditWindow.TYPE_COLLECTION) {
+                //TODO: validate url
+                string updateStr = dlg.interval_box.Text;
+                TimeSpan ts;
+                if (TimeSpan.TryParse(updateStr, out ts)) {
+                    updateInterval = ts;
+                }
+                //TODO: backload
+            }
+
+            FeedMetadata feed;
+            switch (selType) {
+            case AddEditWindow.TYPE_COLLECTION:
+                Collection coll = new Collection(name, desc, icon, parent);
+                this.addCollection(coll);
+                return;
+            case AddEditWindow.TYPE_FEED:
+                feed = new FeedMetadata(name, desc, url, icon, updateInterval, parent);
+                break;
+            case AddEditWindow.TYPE_HTML_FEED:
+                feed = new HtmlFeedMetadata(name, desc, url, icon, updateInterval, parent);
+                break;
+            case AddEditWindow.TYPE_YOUTUBE_FEED:
+                string channelId = dlg.channel_id_box.Text;
+                //TODO: validate channel id
+                string uploadsId = channelId;
+                //TODO: uploads id
+                feed = new YouTubeChannelMetadata(name, desc, url, channelId, uploadsId, icon, updateInterval, parent);
+                break;
+            default:
+                //TODO: error
+                return;
+            }
+            this.addFeed(feed);
+        }
+
+        public void editItem() {
+            if (this.selectedColl == null) {
+                return;
+            }
+            AddEditWindow dlg = new AddEditWindow("Edit...");
+            dlg.Owner = this.window;
+            if (this.selectedColl is CollectionView) {
+                dlg.type_box.SelectedValue = AddEditWindow.TYPE_COLLECTION;
+            }
+            else if (this.selectedColl is FeedView feedView) {
+                if (feedView.feed is HtmlFeed) {
+                    dlg.type_box.SelectedValue = AddEditWindow.TYPE_HTML_FEED;
+                }
+                else if (feedView.feed is YouTubeFeed youTubeFeed) {
+                    dlg.type_box.SelectedValue = AddEditWindow.TYPE_YOUTUBE_FEED;
+                    dlg.channel_id_box.Text = ((YouTubeChannelMetadata)(youTubeFeed.metadata)).channelId;
+                    dlg.video_id_lbl.Visibility = Visibility.Collapsed;
+                    dlg.video_id_box.Visibility = Visibility.Collapsed;
+                }
+                else {
+                    dlg.type_box.SelectedValue = AddEditWindow.TYPE_FEED;
+                }
+                dlg.url_box.Text = feedView.feed.metadata.url;
+                dlg.interval_box.Text = feedView.feed.metadata.updateInterval.ToString();
+                dlg.backload_lbl.Visibility = Visibility.Collapsed;
+                dlg.backload_box.Visibility = Visibility.Collapsed;
+            }
+            else {
+                return;
+            }
+            dlg.type_box.IsEnabled = false;
+            dlg.name_box.Text = this.selectedColl.name;
+            dlg.desc_box.Text = this.selectedColl.description;
+            dlg.icon = this.selectedColl.raw_icon;
+            dlg.icon_img.Source = this.selectedColl.icon;
+            dlg.parent_lbl.Visibility = Visibility.Collapsed;
+            dlg.collections_lst.Visibility = Visibility.Collapsed;
+            dlg.ShowDialog();
+            if (!dlg.valid) {
+                return;
+            }
+
+            bool modified = false;
+
+            string url = dlg.url_box.Text;
+            string name = dlg.name_box.Text;
+            //TODO: validate name
+            string desc = dlg.desc_box.Text;
+            byte[] icon = dlg.icon;
+
+            if (this.selectedColl is FeedView fv) {
+                //TODO: validate url
+                TimeSpan updateInterval;
+                string updateStr = dlg.interval_box.Text;
+                if (!TimeSpan.TryParse(updateStr, out updateInterval)) {
+                    //TODO: error
+                }
+                if (fv.feed is YouTubeFeed youTubeFeed) {
+                    string channelId = dlg.channel_id_box.Text;
+                    //TODO: validate channel id
+                    string uploadsId = channelId;
+                    //TODO: uploads id
+                    YouTubeChannelMetadata ytMd = (YouTubeChannelMetadata)(youTubeFeed.metadata);
+                    ytMd.channelId = channelId;
+                    ytMd.uploadsId = uploadsId;
+                }
+                fv.feed.metadata.url = url;
+                fv.feed.metadata.updateInterval = updateInterval;
+            }
+            if (name != this.selectedColl.name) {
+                this.selectedColl.name = name;
+                modified = true;
+            }
+            if (desc != this.selectedColl.description) {
+                this.selectedColl.description = desc;
+                modified = true;
+            }
+            if (icon != this.selectedColl.raw_icon) {
+                this.selectedColl.raw_icon = icon;
+                modified = true;
+            }
+
+            if (modified) {
+                //TODO: this.saveIndex();
+            }
+        }
+
+        public void moveItem() {
+            if (this.selectedColl == null) {
+                return;
+            }
+            Guid? parentGuid = null;
+            if (this.selectedColl is CollectionView collView) {
+                parentGuid = collView.collection.parent;
+            }
+            else if (this.selectedColl is FeedView feedView) {
+                parentGuid = feedView.feed.metadata.collection;
+            }
+            else {
+                return;
+            }
+            AddEditWindow dlg = new AddEditWindow("Move...");
+            dlg.Owner = this.window;
+            dlg.type_lbl.Visibility = Visibility.Collapsed;
+            dlg.type_box.Visibility = Visibility.Collapsed;
+            dlg.channel_id_lbl.Visibility = Visibility.Collapsed;
+            dlg.channel_id_box.Visibility = Visibility.Collapsed;
+            dlg.video_id_lbl.Visibility = Visibility.Collapsed;
+            dlg.video_id_box.Visibility = Visibility.Collapsed;
+            dlg.url_lbl.Visibility = Visibility.Collapsed;
+            dlg.url_box.Visibility = Visibility.Collapsed;
+            dlg.name_box.Text = this.selectedColl.name;
+            dlg.name_box.IsEnabled = false;
+            dlg.desc_lbl.Visibility = Visibility.Collapsed;
+            dlg.desc_box.Visibility = Visibility.Collapsed;
+            dlg.icon_lbl.Visibility = Visibility.Collapsed;
+            dlg.icon_box.Visibility = Visibility.Collapsed;
+            dlg.icon_img.Visibility = Visibility.Collapsed;
+            dlg.interval_lbl.Visibility = Visibility.Collapsed;
+            dlg.interval_box.Visibility = Visibility.Collapsed;
+            dlg.backload_lbl.Visibility = Visibility.Collapsed;
+            dlg.backload_box.Visibility = Visibility.Collapsed;
+            CollectionView collSnapshot;
+            lock (this.indexLock) {
+                collSnapshot = this.collectionViews.copy_collections(parentGuid, this.selectedColl.guid);
+            }
+            if (parentGuid == null) {
+                collSnapshot.is_selected = true;
+            }
+            dlg.collections_lst.ItemsSource = new ObservableCollection<CollectionFeedView> { collSnapshot };
+            dlg.ShowDialog();
+            if (!dlg.valid) {
+                return;
+            }
+
+            Guid? newParent = null;
+            CollectionFeedView selParent = dlg.collections_lst.SelectedItem as CollectionFeedView;
+            if ((selParent != null) && (selParent != collSnapshot)) {
+                newParent = selParent.guid;
+            }
+            if (newParent != parentGuid) {
+                //TODO: move item
+                //TODO: this.saveIndex();
+            }
+        }
+
+        //TODO: remove item
     }
 }

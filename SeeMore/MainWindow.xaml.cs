@@ -78,7 +78,19 @@ namespace SeeMore {
             this.coll_updated_box.Content = (updated == null ? "" : ((DateTimeOffset)updated).ToString("G"));
         }
 
-        //TODO: coll_add, coll_edit, coll_move, coll_remove, coll_update
+        private void coll_add(object sender, RoutedEventArgs e) {
+            this.view_manager.addItem();
+        }
+
+        private void coll_edit(object sender, RoutedEventArgs e) {
+            this.view_manager.editItem();
+        }
+
+        private void coll_move(object sender, RoutedEventArgs e) {
+            this.view_manager.moveItem();
+        }
+
+        //TODO: coll_remove, coll_update
 
         private void art_list_sel_changed(object sender, RoutedEventArgs e) {
             ArticleView prevSel = this.view_manager.selectedArt;

@@ -124,10 +124,13 @@ namespace SeeMore {
 
         public static FeedMetadata getMetadata(string url) {
             SyndicationFeed feed;
-            using (XmlReader reader = XmlReader.Create(url)) {
-                feed = SyndicationFeed.Load(reader);
+            using (Stream str = HttpUtils.openStream(url)) {
+                using (XmlReader reader = XmlReader.Create(str)) {
+                    feed = SyndicationFeed.Load(reader);
+                }
             }
-            byte[] icon = ViewManager.downloadImage(feed.ImageUrl?.AbsoluteUri);
+            //TODO: fall back to ${site_url}/favicon.ico
+            byte[] icon = HttpUtils.downloadFile(feed.ImageUrl?.AbsoluteUri);
             return new FeedMetadata(feed.Title?.Text, feed.Description?.Text, url, icon);
         }
 
@@ -137,8 +140,10 @@ namespace SeeMore {
             FeedArticles updateArticles = new FeedArticles();
 
             SyndicationFeed feed;
-            using (XmlReader reader = XmlReader.Create(this.metadata.url)) {
-                feed = SyndicationFeed.Load(reader);
+            using (Stream str = HttpUtils.openStream(this.metadata.url)) {
+                using (XmlReader reader = XmlReader.Create(str)) {
+                    feed = SyndicationFeed.Load(reader);
+                }
             }
             foreach (SyndicationItem item in feed.Items) {
                 Guid guid = Guid.NewGuid();

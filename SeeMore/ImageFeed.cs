@@ -42,7 +42,7 @@ namespace SeeMore {
                 if (element.Name == "media:thumbnail") {
                     XmlNode urlNode = element.Attributes.GetNamedItem("url");
                     if (urlNode != null) {
-                        image = ViewManager.downloadImage(urlNode.Value);
+                        image = HttpUtils.downloadFile(urlNode.Value);
                     }
                 }
             }

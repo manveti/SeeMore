@@ -31,7 +31,7 @@ namespace SeeMore {
         }
         public CollectionFeedView ident { get => this; }
         public abstract string name { get; set; }
-        public abstract string description { get; }
+        public abstract string description { get; set; }
         public BitmapSource icon {
             get => this._icon;
             set {
@@ -39,7 +39,7 @@ namespace SeeMore {
                 this.NotifyPropertyChanged();
             }
         }
-        protected abstract byte[] raw_icon { get; set; }
+        public abstract byte[] raw_icon { get; set; }
         public int count {
             get => this._count;
             set {
@@ -60,6 +60,7 @@ namespace SeeMore {
                 return;
             }
             this.icon = ViewManager.getImageSource(this.raw_icon);
+            this.NotifyPropertyChanged();
         }
     }
 
@@ -81,8 +82,11 @@ namespace SeeMore {
                 this.NotifyPropertyChanged();
             }
         }
-        public override string description { get => this.collection.description; }
-        protected override byte[] raw_icon {
+        public override string description {
+            get => this.collection.description;
+            set { this.collection.description = value; }
+        }
+        public override byte[] raw_icon {
             get => this.collection.icon;
             set {
                 this.collection.icon = value;
@@ -90,10 +94,28 @@ namespace SeeMore {
             }
         }
 
-        public CollectionView(Guid ident, Collection collection) : base(ident) {
+        public CollectionView(Guid guid, Collection collection) : base(guid) {
             this.collection = collection;
             this._children = new ObservableCollection<CollectionFeedView>();
             this.set_icon();
+        }
+
+        public CollectionView copy_collections(Guid? selected = null, Guid? omit = null) {
+            CollectionView result = new CollectionView(this.guid, this.collection);
+            if ((selected != null) && (this.guid == selected)) {
+                result._is_selected = true;
+            }
+            if (this._children != null) {
+                foreach (CollectionFeedView child in this._children) {
+                    if (child.guid == omit) {
+                        continue;
+                    }
+                    if (child is CollectionView childCollection) {
+                        result._children.Add(childCollection.copy_collections(selected, omit));
+                    }
+                }
+            }
+            return result;
         }
     }
 
@@ -107,8 +129,11 @@ namespace SeeMore {
                 this.NotifyPropertyChanged();
             }
         }
-        public override string description { get => this.feed.metadata.description; }
-        protected override byte[] raw_icon {
+        public override string description {
+            get => this.feed.metadata.description;
+            set { this.feed.metadata.description = value; }
+        }
+        public override byte[] raw_icon {
             get => this.feed.metadata.icon;
             set {
                 this.feed.metadata.icon = value;
@@ -116,7 +141,7 @@ namespace SeeMore {
             }
         }
 
-        public FeedView(Guid ident, Feed feed) : base(ident) {
+        public FeedView(Guid guid, Feed feed) : base(guid) {
             this.feed = feed;
             this.set_icon();
         }

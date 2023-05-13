@@ -44,7 +44,7 @@ namespace SeeMore {
     public class YouTubeFeed : Feed {
         public YouTubeFeed(string pathBase, YouTubeChannelMetadata metadata) : base(pathBase, metadata) { }
 
-        //TODO: getMetadata?, also metadata from channel id and/or from video url(and/or id)
+        //TODO: getMetadata, getMetadataByChannelId, getMetadataFromVideo (url and/or id)
 
         public override void backLoad() { }//TODO: load prior content in subclasses where that makes sense
         //note that rss id is "yt:video:${videoId}"
@@ -66,7 +66,7 @@ namespace SeeMore {
                     if ((children != null) && (children.Count > 0)) {
                         XmlNode urlNode = children[0].Attributes.GetNamedItem("url");
                         if (urlNode != null) {
-                            thumbnail = ViewManager.downloadImage(urlNode.Value);
+                            thumbnail = HttpUtils.downloadFile(urlNode.Value);
                         }
                     }
                     break;
