@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,7 +16,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace SeeMore {
     public class SizeConverter : IValueConverter {
@@ -39,9 +39,18 @@ namespace SeeMore {
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window {
+        public static string settings_dir;
+        public static Config config;
         private ViewManager view_manager;
 
+        static MainWindow() {
+            string appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            settings_dir = Path.Join(appDataDir, "manveti", "SeeMore");
+            config = Config.loadConfig(settings_dir);
+        }
+
         public MainWindow() {
+            HttpUtils.userAgent = config.userAgent;
             this.InitializeComponent();
         }
 

@@ -93,10 +93,18 @@ namespace SeeMore {
             coll.count = count;
         }
 
-        public void load(string dataDir) {
+        public void load(string dataDir = null) {
+            if (dataDir == null) {
+                dataDir = this.dataDir;
+            }
+
             // load index
             FeedsIndex index;
             string indexPath = this.getIndexPath(dataDir);
+            if (!File.Exists(indexPath)) {
+                // nothing to load here
+                return;
+            }
             DataContractSerializer serializer = new DataContractSerializer(typeof(FeedsIndex));
             using (FileStream f = new FileStream(indexPath, FileMode.OpenOrCreate)) {
                 XmlDictionaryReader xmlReader = XmlDictionaryReader.CreateTextReader(f, new XmlDictionaryReaderQuotas());

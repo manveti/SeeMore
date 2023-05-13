@@ -64,8 +64,15 @@ namespace SeeMore {
                 metadata = HtmlFeed.getMetadata(url);
                 break;
             case TYPE_YOUTUBE_FEED:
-                //TODO: ...
-                metadata = YouTubeFeed.getMetadata(url);
+                if (this.channel_id_box.Text.Length > 0) {
+                    metadata = YouTubeFeed.getMetadataByChannelId(this.channel_id_box.Text);
+                }
+                else if (this.video_id_box.Text.Length > 0) {
+                    metadata = YouTubeFeed.getMetadataFromVideo(this.video_id_box.Text);
+                }
+                else {
+                    metadata = YouTubeFeed.getMetadata(url);
+                }
                 break;
             }
             if ((iconPath != null) && (iconPath.Length > 0)) {
@@ -82,7 +89,9 @@ namespace SeeMore {
             this.name_box.Text = metadata.name;
             this.desc_box.Text = metadata.description;
             if (type == TYPE_YOUTUBE_FEED) {
-                //TODO: ...
+                this.url_box.Text = metadata.url;
+                YouTubeChannelMetadata youTubeMetadata = (YouTubeChannelMetadata)metadata;
+                this.channel_id_box.Text = youTubeMetadata.channelId;
             }
         }
 

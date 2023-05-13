@@ -1,6 +1,11 @@
 ﻿using System;
+using System.IO;
 using System.ServiceModel.Syndication;
 using System.Xml;
+
+using Google.Apis.Services;
+using Google.Apis.YouTube.v3;
+using Google.Apis.YouTube.v3.Data;
 
 namespace SeeMore {
     [Serializable]
@@ -44,7 +49,71 @@ namespace SeeMore {
     public class YouTubeFeed : Feed {
         public YouTubeFeed(string pathBase, YouTubeChannelMetadata metadata) : base(pathBase, metadata) { }
 
-        //TODO: getMetadata, getMetadataByChannelId, getMetadataFromVideo (url and/or id)
+        private static YouTubeService getYouTubeClient() {
+            BaseClientService.Initializer initializer = new BaseClientService.Initializer() {
+                ApiKey = MainWindow.config.youTubeApiKey,
+                ApplicationName = "SeeMore",
+            };
+            return new YouTubeService(initializer);
+        }
+
+        public static YouTubeChannelMetadata getMetadataByChannelId(string channelId) {
+            string name;
+            string description;
+            string uploadsId;
+            byte[] icon;
+            using (YouTubeService client = getYouTubeClient()) {
+                ChannelsResource.ListRequest request = client.Channels.List("snippet,contentDetails");
+                request.Id = channelId;
+                ChannelListResponse resp = request.Execute();
+                if ((resp.Items == null) || (resp.Items.Count <= 0)) {
+                    return null;
+                }
+                name = resp.Items[0].Snippet.Title;
+                description = resp.Items[0].Snippet.Description;
+                uploadsId = resp.Items[0].ContentDetails.RelatedPlaylists.Uploads;
+                icon = HttpUtils.downloadFile(resp.Items[0].Snippet.Thumbnails.Default__.Url);
+            }
+            string url = "http://www.youtube.com/feeds/videos.xml?channel_id=" + channelId;
+            return new YouTubeChannelMetadata(name, description, url, channelId, uploadsId, icon);
+        }
+
+        public static YouTubeChannelMetadata getMetadataFromVideo(string videoId) {
+            // allow videoId to be a full video URL
+            int idx = videoId.LastIndexOf('=');
+            if (idx > 0) {
+                videoId = videoId.Substring(idx + 1);
+            }
+            string channelId;
+            using (YouTubeService client = getYouTubeClient()) {
+                VideosResource.ListRequest request = client.Videos.List("snippet");
+                request.Id = videoId;
+                VideoListResponse resp = request.Execute();
+                if ((resp.Items == null) || (resp.Items.Count <= 0)) {
+                    return null;
+                }
+                channelId = resp.Items[0].Snippet.ChannelId;
+            }
+            return getMetadataByChannelId(channelId);
+        }
+
+        public static new FeedMetadata getMetadata(string url) {
+            SyndicationFeed feed;
+            using (Stream str = HttpUtils.openStream(url)) {
+                using (XmlReader reader = XmlReader.Create(str)) {
+                    feed = SyndicationFeed.Load(reader);
+                }
+            }
+            foreach (SyndicationItem item in feed.Items) {
+                foreach (SyndicationElementExtension ext in item.ElementExtensions) {
+                    XmlElement element = ext.GetObject<XmlElement>();
+                    if (element.Name == "yt:channelId") {
+                        return getMetadataByChannelId(element.InnerText);
+                    }
+                }
+            }
+            return null;
+        }
 
         public override void backLoad() { }//TODO: load prior content in subclasses where that makes sense
         //note that rss id is "yt:video:${videoId}"
