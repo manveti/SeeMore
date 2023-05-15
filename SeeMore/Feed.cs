@@ -134,7 +134,9 @@ namespace SeeMore {
             return new FeedMetadata(feed.Title?.Text, feed.Description?.Text, url, icon);
         }
 
-        public virtual void backLoad() { }
+        public virtual FeedArticles getBackloadArticles() {
+            return null;
+        }
 
         public FeedArticles getUpdateArticles() {
             FeedArticles updateArticles = new FeedArticles();
@@ -173,14 +175,14 @@ namespace SeeMore {
             return updateArticles;
         }
 
-        public bool applyUpdate(FeedArticles updateArticles) {
+        public bool applyUpdate(FeedArticles updateArticles, bool pruneDeleted = true) {
             // NOTE: only call this function from a locked context
             bool modified = updateArticles.articles.Count > 0;
 
             // add pre-existing articles to idToGuid
             HashSet<Guid> removeArticles = new HashSet<Guid>();
             foreach (Guid key in this.articles.articles.Keys) {
-                if (this.deleted.Contains(key)) {
+                if ((pruneDeleted) && (this.deleted.Contains(key))) {
                     removeArticles.Add(key);
                     modified = true;
                 }
@@ -188,9 +190,11 @@ namespace SeeMore {
                     updateArticles.idToGuid[this.articles.articles[key].id] = key;
                 }
             }
-            // prune deleted articles that aren't in the feed anymore
-            foreach (Guid key in removeArticles) {
-                this.articles.articles.Remove(key);
+            if (pruneDeleted) {
+                // prune deleted articles that aren't in the feed anymore
+                foreach (Guid key in removeArticles) {
+                    this.articles.articles.Remove(key);
+                }
             }
 
             // add new articles

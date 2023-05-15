@@ -14,6 +14,7 @@ namespace SeeMore {
         public TimeSpan updateInterval;
         public DateTimeOffset? lastUpdated;
         public Guid? collection;
+        public bool needBackload;
 
         public FeedMetadata(
             string name, string description, string url, byte[] icon = null, TimeSpan? updateInterval = null, Guid? collection = null
@@ -29,6 +30,7 @@ namespace SeeMore {
             this.updateInterval = (TimeSpan)(updateInterval);
             this.lastUpdated = null;
             this.collection = collection;
+            this.needBackload = false;
         }
 
         public virtual Feed constructFeed(string pathBase) {

@@ -12,7 +12,7 @@ namespace SeeMore {
     public class YouTubeChannelMetadata : FeedMetadata {
         public string channelId;
         public string uploadsId;
-        //TODO: uploads playlist page token
+        public string backloadPageToken;
 
         public YouTubeChannelMetadata(
             string name,
@@ -26,6 +26,7 @@ namespace SeeMore {
         ) : base(name, description, url, icon, updateInterval, collection) {
             this.channelId = channelId;
             this.uploadsId = uploadsId;
+            this.backloadPageToken = null;
         }
 
         public override Feed constructFeed(string pathBase) {
@@ -47,6 +48,8 @@ namespace SeeMore {
     }
 
     public class YouTubeFeed : Feed {
+        private const int MAX_API_RESULTS = 50;
+
         public YouTubeFeed(string pathBase, YouTubeChannelMetadata metadata) : base(pathBase, metadata) { }
 
         private static YouTubeService getYouTubeClient() {
@@ -115,8 +118,54 @@ namespace SeeMore {
             return null;
         }
 
-        public override void backLoad() { }//TODO: load prior content in subclasses where that makes sense
-        //note that rss id is "yt:video:${videoId}"
+        public override FeedArticles getBackloadArticles() {
+            if (!this.metadata.needBackload) {
+                return null;
+            }
+
+            FeedArticles backloadArticles = new FeedArticles();
+
+            YouTubeChannelMetadata metadata = (YouTubeChannelMetadata)(this.metadata);
+            string pageToken = metadata.backloadPageToken;
+            if (pageToken == null) {
+                pageToken = "";
+            }
+            using (YouTubeService client = getYouTubeClient()) {
+                PlaylistItemsResource.ListRequest request = client.PlaylistItems.List("snippet");
+                request.PlaylistId = metadata.uploadsId;
+                request.MaxResults = MAX_API_RESULTS;
+                request.PageToken = pageToken;
+                PlaylistItemListResponse response = request.Execute();
+                foreach (PlaylistItem item in response.Items) {
+                    Guid guid = Guid.NewGuid();
+                    string videoId = item.Snippet.ResourceId.VideoId;
+                    string articleId = "yt:video:" + videoId;
+
+                    // skip videos we've seen before
+                    if (this.articles.idToGuid.ContainsKey(articleId)) {
+                        continue;
+                    }
+
+                    // add article
+                    DateTimeOffset timestamp = (DateTimeOffset)(item.Snippet.PublishedAt);
+                    string title = item.Snippet.Title;
+                    string description = item.Snippet.Description;
+                    byte[] thumbnail = HttpUtils.downloadFile(item.Snippet.Thumbnails.Standard.Url);
+                    string url = "https://www.youtube.com/watch?v=" + videoId;
+                    YouTubeArticle article = new YouTubeArticle(articleId, timestamp, title, description, url, videoId, thumbnail);
+                    backloadArticles.articles[guid] = article;
+                    backloadArticles.idToGuid[articleId] = guid;
+                }
+                pageToken = response.NextPageToken;
+            }
+
+            metadata.backloadPageToken = pageToken;
+            if (pageToken == null) {
+                metadata.needBackload = false;
+            }
+
+            return backloadArticles;
+        }
 
         public override Article syndicationItemToArticle(SyndicationItem item) {
             Article article = base.syndicationItemToArticle(item);
