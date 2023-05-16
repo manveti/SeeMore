@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Explosm.net</title>
+    <link>https://explosm.net</link>
+    <description>Daily Comics and more!</description>
+    <lastBuildDate>Mon, 15 May 2023 14:32:35 GMT</lastBuildDate>
+    <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+    <generator>Explosm.net</generator>
+    <language>en</language>
+    <copyright>Copyright 2023, Explosm.net</copyright>
+    <atom:link href="https://explosm.net/rss" rel="self" type="application/rss+xml"/>
+    <item>
+      <title><![CDATA[Comic for 2023.05.15 - Sythe]]></title>
+      <link>https://explosm.net/comics/sythe</link>
+      <guid>https://explosm.net/comics/sythe</guid>
+      <pubDate>Mon, 15 May 2023 14:32:35 GMT</pubDate>
+      <description><![CDATA[New Cyanide and Happiness Comic]]></description>
+      <category>Comics</category>
+    </item>
+    <item>
+      <title><![CDATA[Comic for 2023.05.14 - Prescription]]></title>
+      <link>https://explosm.net/comics/prescription</link>
+      <guid>https://explosm.net/comics/prescription</guid>
+      <pubDate>Sun, 14 May 2023 11:38:10 GMT</pubDate>
+      <description><![CDATA[New Cyanide and Happiness Comic]]></description>
+      <category>Comics</category>
+    </item>
+    <item>
+      <title><![CDATA[Comic for 2023.05.13 - Post Nasal Drip]]></title>
+      <link>https://explosm.net/comics/post-nasal-drip</link>
+      <guid>https://explosm.net/comics/post-nasal-drip</guid>
+      <pubDate>Sat, 13 May 2023 00:00:10 GMT</pubDate>
+      <description><![CDATA[New Cyanide and Happiness Comic]]></description>
+      <category>Comics</category>
+    </item>
+    <item>
+      <title><![CDATA[Comic for 2023.05.12 - Hey God]]></title>
+      <link>https://explosm.net/comics/hey-god</link>
+      <guid>https://explosm.net/comics/hey-god</guid>
+      <pubDate>Fri, 12 May 2023 01:20:52 GMT</pubDate>
+      <description><![CDATA[New Cyanide and Happiness Comic]]></description>
+      <category>Comics</category>
+    </item>
+    <item>
+      <title><![CDATA[Comic for 2023.05.10 - Award]]></title>
+      <link>https://explosm.net/comics/award</link>
+      <guid>https://explosm.net/comics/award</guid>
+      <pubDate>Wed, 10 May 2023 10:54:23 GMT</pubDate>
+      <description><![CDATA[New Cyanide and Happiness Comic]]></description>
+      <category>Comics</category>
+    </item>
+  </channel>
+</rss>
