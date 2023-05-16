@@ -1,21 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 
 namespace SeeMore {
     public class SizeConverter : IValueConverter {
@@ -116,7 +105,51 @@ namespace SeeMore {
             this.art_del_but.IsEnabled = (sel != null);
         }
 
-        //TODO: art_open, art_del
+        private void art_list_open(object sender, RoutedEventArgs e) {
+            ArticleView articleView = ((FrameworkElement)sender).DataContext as ArticleView;
+            this.open_article(articleView);
+        }
+
+        private void art_open(object sender, RoutedEventArgs e) {
+            this.open_article(this.view_manager.selectedArt);
+        }
+
+        private void open_article(ArticleView articleView) {
+            if ((articleView == null) || (articleView.article.url == null) || (articleView.article.url.Length <= 0)) {
+                return;
+            }
+            Process proc = new Process();
+            proc.StartInfo.UseShellExecute = true;
+            if (config.browserPath == null) {
+                proc.StartInfo.FileName = articleView.article.url;
+            }
+            else {
+                proc.StartInfo.FileName = config.browserPath;
+                if (config.browserArgs == null) {
+                    proc.StartInfo.Arguments = articleView.article.url;
+                }
+                else {
+                    proc.StartInfo.Arguments = string.Format(config.browserArgs, articleView.article.url);
+                }
+            }
+            proc.Start();
+        }
+
+        private void art_list_del(object sender, RoutedEventArgs e) {
+            ArticleView articleView = ((FrameworkElement)sender).DataContext as ArticleView;
+            this.delete_article(articleView);
+        }
+
+        private void art_del(object sender, RoutedEventArgs e) {
+            this.delete_article(this.view_manager.selectedArt);
+        }
+
+        private void delete_article(ArticleView articleView) {
+            if (articleView == null) {
+                return;
+            }
+            //TODO: delete articleView
+        }
 
         public void hide_article_content() {
             this.content_box_default.Visibility = Visibility.Collapsed;

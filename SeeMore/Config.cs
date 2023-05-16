@@ -6,6 +6,10 @@ using System.Xml;
 namespace SeeMore {
     [Serializable]
     public class Config {
+        [OptionalField]
+        public string browserPath;
+        [OptionalField]
+        public string browserArgs;
         public string dataDir;
         public Guid? defaultCollection;
         public string userAgent;
