@@ -116,8 +116,7 @@ namespace SeeMore {
         public void deleteArticle(Guid guid) {
             string delPath = this.pathBase + ".del";
             this.deleted.Add(guid);
-            using (FileStream f = new FileStream(delPath, FileMode.Append)) {
-                StreamWriter writer = new StreamWriter(f);
+            using (StreamWriter writer = new StreamWriter(delPath, append: true)) {
                 writer.WriteLine(guid.ToString());
             }
         }

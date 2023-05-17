@@ -75,7 +75,7 @@ namespace SeeMore {
                 name = resp.Items[0].Snippet.Title;
                 description = resp.Items[0].Snippet.Description;
                 uploadsId = resp.Items[0].ContentDetails.RelatedPlaylists.Uploads;
-                icon = HttpUtils.downloadFile(resp.Items[0].Snippet.Thumbnails.Default__.Url);
+                icon = HttpUtils.downloadFile(resp.Items[0].Snippet.Thumbnails.Default__?.Url);
             }
             string url = "http://www.youtube.com/feeds/videos.xml?channel_id=" + channelId;
             return new YouTubeChannelMetadata(name, description, url, channelId, uploadsId, icon);
@@ -164,7 +164,9 @@ namespace SeeMore {
                     DateTimeOffset timestamp = (DateTimeOffset)(item.Snippet.PublishedAt);
                     string title = item.Snippet.Title;
                     string description = item.Snippet.Description;
-                    byte[] thumbnail = HttpUtils.downloadFile(item.Snippet.Thumbnails.Standard.Url);
+                    ThumbnailDetails thumbnails = item.Snippet.Thumbnails;
+                    Thumbnail thumb = thumbnails.Standard ?? thumbnails.High ?? thumbnails.Medium ?? thumbnails.Default__;
+                    byte[] thumbnail = HttpUtils.downloadFile(thumb?.Url);
                     string url = "https://www.youtube.com/watch?v=" + videoId;
                     YouTubeArticle article = new YouTubeArticle(articleId, timestamp, title, description, url, videoId, thumbnail);
                     backloadArticles.articles[guid] = article;

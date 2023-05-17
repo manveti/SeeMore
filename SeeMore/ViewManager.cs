@@ -95,7 +95,7 @@ namespace SeeMore {
             }
             foreach (CollectionFeedView child in coll.children) {
                 this.populateCounts(child);
-                coll.count += child.count;
+                count += child.count;
             }
             coll.count = count;
         }
@@ -179,6 +179,7 @@ namespace SeeMore {
 
         private void saveIndex() {
             // NOTE: caller must hold indexLock
+            Directory.CreateDirectory(this.dataDir);
             // write index to tmp path...
             string indexPath = this.getIndexPath();
             string indexPathTmp = indexPath + ".tmp";
@@ -193,14 +194,17 @@ namespace SeeMore {
             File.Move(indexPathTmp, indexPath);
         }
 
-        public void save() {
+        private void saveArticles() {
+            // NOTE: caller must hold indexLock
             Directory.CreateDirectory(this.dataDir);
+            foreach (Feed feed in this.guidToFeed.Values) {
+                feed.saveArticles();
+            }
+        }
+
+        public void save() {
             lock (this.indexLock) {
-                // write articles
-                foreach (Feed feed in this.guidToFeed.Values) {
-                    feed.saveArticles();
-                }
-                // write index
+                this.saveArticles();
                 this.saveIndex();
             }
         }
@@ -230,9 +234,11 @@ namespace SeeMore {
             bool modified;
             lock (this.indexLock) {
                 modified = feed.applyUpdate(newArticles, pruneDeleted: !backload);
-                //TODO: this.saveIndex();
+                this.saveIndex();
+                if (modified) {
+                    this.saveArticles();
+                }
             }
-            //if modified: this.save()
             return modified;
         }
 
@@ -463,7 +469,7 @@ namespace SeeMore {
                     insertIdx = siblings.Count;
                 }
                 parent.children.Insert(insertIdx, collView);
-                //TODO: this.saveIndex();
+                this.saveIndex();
             }
             return guid;
         }
@@ -486,7 +492,7 @@ namespace SeeMore {
                     insertIdx = siblings.Count;
                 }
                 parent.children.Insert(insertIdx, feedView);
-                //TODO: this.saveIndex();
+                this.saveIndex();
             }
             this.updateEvent.Set();
             return guid;
@@ -710,7 +716,7 @@ namespace SeeMore {
             }
 
             if (modified) {
-                //TODO: this.saveIndex();
+                this.saveIndex();
                 if (this.selectedColl is FeedView) {
                     this.updateEvent.Set();
                 }
@@ -780,8 +786,22 @@ namespace SeeMore {
 
         public void deleteArticle(ArticleView artView) {
             lock (this.indexLock) {
-                FeedView feedView = (FeedView)(this.guidToCollectionFeedView[artView.feed]);
+                CollectionFeedView collectionFeedView = this.guidToCollectionFeedView[artView.feed];
+                FeedView feedView = (FeedView)(collectionFeedView);
                 feedView.feed.deleteArticle(artView.guid);
+                // update article counts
+                while (collectionFeedView != null) {
+                    collectionFeedView.count -= 1;
+                    if (collectionFeedView == this.collectionViews) {
+                        break;
+                    }
+                    if (collectionFeedView.parent == null) {
+                        collectionFeedView = this.collectionViews;
+                    }
+                    else {
+                        collectionFeedView = this.guidToCollectionFeedView[(Guid)(collectionFeedView.parent)];
+                    }
+                }
                 if ((this.collectionArticles == null) || (this.collectionArticles.Count <= 0)) {
                     return;
                 }
@@ -799,7 +819,7 @@ namespace SeeMore {
                 int selIdx = this.window.art_list.SelectedIndex;
                 this.collectionArticles.RemoveAt(idx);
                 this.window.art_list.ItemsSource = this.collectionArticles;
-                if (selIdx >= this.collectionArticles.Count) {
+                if ((selIdx > idx) || (selIdx >= this.collectionArticles.Count)) {
                     selIdx -= 1;
                 }
                 if (selIdx >= 0) {
