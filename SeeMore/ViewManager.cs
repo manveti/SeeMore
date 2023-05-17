@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Net.Http;
 using System.Runtime.Serialization;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -12,6 +11,8 @@ using System.Xml;
 
 namespace SeeMore {
     public class ViewManager {
+        public static readonly TimeSpan POLL_INTERVAL = TimeSpan.FromMinutes(10);
+
         private readonly MainWindow window;
         private string dataDir;
         public object indexLock;
@@ -23,6 +24,9 @@ namespace SeeMore {
         public CollectionFeedView selectedColl = null;
         private List<ArticleView> collectionArticles = null;
         public ArticleView selectedArt = null;
+        public bool running = true;
+        public AutoResetEvent updateEvent;
+        public Thread updateThread;
 
         public ViewManager(MainWindow window, string dataDir) {
             this.window = window;
@@ -34,6 +38,9 @@ namespace SeeMore {
             this.guidToFeed = new Dictionary<Guid, Feed>();
             this.priorityUpdates = new List<Guid>();
             this.window.coll_list.ItemsSource = new ObservableCollection<CollectionFeedView> { this.collectionViews };
+            this.updateEvent = new AutoResetEvent(false);
+            this.updateThread = new Thread(this.updateLoop);
+            this.updateThread.Start();
         }
 
         public void clear() {
@@ -198,7 +205,36 @@ namespace SeeMore {
             }
         }
 
-        //TODO: update feed: upd=feed.getUpdateArticles(); lock { mod=feed.applyUpdate(upd); save if mod }
+        private bool updateFeed(Guid guid, bool backload) {
+            Feed feed;
+            lock (this.indexLock) {
+                if (!this.guidToFeed.ContainsKey(guid)) {
+                    return false;
+                }
+                feed = this.guidToFeed[guid];
+            }
+
+            // get new articles
+            FeedArticles newArticles;
+            if (backload) {
+                newArticles = feed.getBackloadArticles();
+            }
+            else {
+                newArticles = feed.getUpdateArticles();
+            }
+            if (newArticles == null) {
+                return false;
+            }
+
+            // add/update new articles
+            bool modified;
+            lock (this.indexLock) {
+                modified = feed.applyUpdate(newArticles, pruneDeleted: !backload);
+                //TODO: this.saveIndex();
+            }
+            //if modified: this.save()
+            return modified;
+        }
 
         private int feedUpdateCompare(Feed x, Feed y) {
             int result = x.due.CompareTo(y.due);
@@ -219,11 +255,11 @@ namespace SeeMore {
             return xUpdated.CompareTo(yUpdated);
         }
 
-        public Guid? updateNextFeed() {
+        private Guid? updateNextFeed() {
             Guid guid;
+            bool doBackload = false;
 
             lock (this.indexLock) {
-                //TODO: backload
                 if (this.priorityUpdates.Count > 0) {
                     guid = this.priorityUpdates[0];
                     this.priorityUpdates.RemoveAt(0);
@@ -235,14 +271,119 @@ namespace SeeMore {
                     }
                     feedIds.Sort((x, y) => this.feedUpdateCompare(this.guidToFeed[x], this.guidToFeed[y]));
                     guid = feedIds[0];
+                    // if any feed needs backloading, do that before updating
+                    foreach (Guid feedId in feedIds) {
+                        if (this.guidToFeed[feedId].metadata.needBackload) {
+                            guid = feedId;
+                            doBackload = true;
+                            break;
+                        }
+                    }
                 }
             }
 
-            //TODO: this.updateFeed(guid)
+            if (!this.updateFeed(guid, doBackload)) {
+                // nothing changed
+                return null;
+            }
+            // something changed; return which GUID needs updating in the UI
             return guid;
         }
 
-        //TODO: update loop
+        private void handleUpdate() {
+            Guid? updatedGuid = this.updateNextFeed();
+            if (updatedGuid == null) {
+                return;
+            }
+
+            // update UI
+            Guid guid = (Guid)updatedGuid;
+            bool needArticleUpdate = false;
+            int artIdx = -1;
+            lock (this.indexLock) {
+                CollectionFeedView collectionFeedView = this.guidToCollectionFeedView[guid];
+                FeedView feedView = (FeedView)collectionFeedView;
+                int count = 0;
+                foreach (Guid key in feedView.feed.articles.articles.Keys) {
+                    if (!feedView.feed.deleted.Contains(key)) {
+                        count += 1;
+                    }
+                }
+                int countDiff = count - collectionFeedView.count;
+                while (collectionFeedView != null) {
+                    if (countDiff != 0) {
+                        collectionFeedView.count += countDiff;
+                    }
+                    if (collectionFeedView == this.selectedColl) {
+                        needArticleUpdate = true;
+                    }
+                    if (collectionFeedView == this.collectionViews) {
+                        break;
+                    }
+                    if (collectionFeedView.parent == null) {
+                        collectionFeedView = this.collectionViews;
+                    }
+                    else {
+                        collectionFeedView = this.guidToCollectionFeedView[(Guid)(collectionFeedView.parent)];
+                    }
+                }
+                if (needArticleUpdate) {
+                    List<ArticleView> articles = new List<ArticleView>();
+                    this.populateArticles(articles, this.selectedColl);
+                    articles.Sort((x, y) => this.artviewCompare(x, y));
+                    for (int i = 0; i < articles.Count; i++) {
+                        if (articles[i].guid == this.selectedArt?.guid) {
+                            artIdx = i;
+                            break;
+                        }
+                    }
+                    this.collectionArticles = articles;
+                    this.selectedArt = null;
+                }
+            }
+            if (needArticleUpdate) {
+                // selection handler will acquire the lock, so don't change selection until we've released it
+                this.window.Dispatcher.Invoke(
+                    () => {
+                        this.window.art_list.ItemsSource = this.collectionArticles;
+                        if (artIdx >= 0) {
+                            this.window.art_list.SelectedIndex = artIdx;
+                        }
+                    }
+                );
+            }
+        }
+
+        public void updateLoop() {
+            while (this.running) {
+                this.handleUpdate();
+                TimeSpan sleepInterval = POLL_INTERVAL;
+                lock (this.indexLock) {
+                    if (this.priorityUpdates.Count > 0) {
+                        // outstanding priority updates; no need to sleep
+                        continue;
+                    }
+                    bool immediate = false;
+                    DateTimeOffset now = DateTimeOffset.Now;
+                    foreach (Guid guid in this.guidToFeed.Keys) {
+                        Feed feed = this.guidToFeed[guid];
+                        if ((feed.metadata.needBackload) || (feed.due <= now)) {
+                            immediate = true;
+                            break;
+                        }
+                        TimeSpan untilDue = feed.due - now;
+                        if (untilDue < sleepInterval) {
+                            sleepInterval = untilDue;
+                        }
+                    }
+                    if (immediate) {
+                        // immediate backload/update needed; no need to sleep
+                        continue;
+                    }
+                }
+                this.updateEvent.WaitOne(sleepInterval);
+            }
+        }
 
         public CollectionFeedView getCollectionFeedView(Guid? guid) {
             if (guid == null) {
@@ -346,12 +487,12 @@ namespace SeeMore {
                 }
                 parent.children.Insert(insertIdx, feedView);
                 //TODO: this.saveIndex();
-                //TODO: set up backload
             }
+            this.updateEvent.Set();
             return guid;
         }
 
-        //TODO: editCollectionFeed, moveCollectionFeed, removeCollectionFeed
+        //TODO: moveCollectionFeed, removeCollectionFeed
 
         public static void setBrowserContents(WebBrowser browser, string contents) {
             if ((contents == null) || (contents.Length <= 0)) {
@@ -443,7 +584,6 @@ namespace SeeMore {
                 if (TimeSpan.TryParse(updateStr, out ts)) {
                     updateInterval = ts;
                 }
-                //TODO: backload
             }
 
             FeedMetadata feed;
@@ -461,13 +601,16 @@ namespace SeeMore {
             case AddEditWindow.TYPE_YOUTUBE_FEED:
                 string channelId = dlg.channel_id_box.Text;
                 //TODO: validate channel id
-                string uploadsId = channelId;
-                //TODO: uploads id
+                string uploadsId = dlg.uploads_id_box.Text;
+                //TODO: validate uploads id
                 feed = new YouTubeChannelMetadata(name, desc, url, channelId, uploadsId, icon, updateInterval, parent);
                 break;
             default:
                 //TODO: error
                 return;
+            }
+            if (dlg.backload_box.IsChecked == true) {
+                feed.needBackload = true;
             }
             this.addFeed(feed);
         }
@@ -532,14 +675,26 @@ namespace SeeMore {
                 if (fv.feed is YouTubeFeed youTubeFeed) {
                     string channelId = dlg.channel_id_box.Text;
                     //TODO: validate channel id
-                    string uploadsId = channelId;
-                    //TODO: uploads id
+                    string uploadsId = dlg.uploads_id_box.Text;
+                    //TODO: validate uploads id
                     YouTubeChannelMetadata ytMd = (YouTubeChannelMetadata)(youTubeFeed.metadata);
-                    ytMd.channelId = channelId;
-                    ytMd.uploadsId = uploadsId;
+                    if (channelId != ytMd.channelId) {
+                        ytMd.channelId = channelId;
+                        modified = true;
+                    }
+                    if (uploadsId != ytMd.uploadsId) {
+                        ytMd.uploadsId = uploadsId;
+                        modified = true;
+                    }
                 }
-                fv.feed.metadata.url = url;
-                fv.feed.metadata.updateInterval = updateInterval;
+                if (url != fv.feed.metadata.url) {
+                    fv.feed.metadata.url = url;
+                    modified = true;
+                }
+                if (updateInterval != fv.feed.metadata.updateInterval) {
+                    fv.feed.metadata.updateInterval = updateInterval;
+                    modified = true;
+                }
             }
             if (name != this.selectedColl.name) {
                 this.selectedColl.name = name;
@@ -556,6 +711,9 @@ namespace SeeMore {
 
             if (modified) {
                 //TODO: this.saveIndex();
+                if (this.selectedColl is FeedView) {
+                    this.updateEvent.Set();
+                }
             }
         }
 

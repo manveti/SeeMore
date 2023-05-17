@@ -250,6 +250,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Label Grid.Row="0" Grid.Column="0" Margin="1" Name="type_lbl" Content="Type:"/>
@@ -264,31 +265,34 @@
         <Label Grid.Row="1" Grid.Column="0" Margin="1" Name="channel_id_lbl" Content="Channel ID:"/>
         <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="channel_id_box"/>
 
-        <Label Grid.Row="2" Grid.Column="0" Margin="1" Name="video_id_lbl" Content="Video ID/URL:"/>
-        <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="video_id_box"/>
+        <Label Grid.Row="2" Grid.Column="0" Margin="1" Name="uploads_id_lbl" Content="Playlist ID:"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="uploads_id_box"/>
 
-        <Label Grid.Row="3" Grid.Column="0" Margin="1" Name="url_lbl" Content="Feed URL:"/>
-        <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="url_box"/>
+        <Label Grid.Row="3" Grid.Column="0" Margin="1" Name="video_id_lbl" Content="Video ID/URL:"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="video_id_box"/>
 
-        <Label Grid.Row="4" Grid.Column="0" Margin="1" Name="name_lbl" Content="Name:"/>
-        <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="name_box"/>
+        <Label Grid.Row="4" Grid.Column="0" Margin="1" Name="url_lbl" Content="Feed URL:"/>
+        <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="url_box"/>
 
-        <Label Grid.Row="5" Grid.Column="0" Margin="1" Name="desc_lbl" Content="Description:"/>
-        <TextBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Height="60" MaxWidth="600" Name="desc_box"
+        <Label Grid.Row="5" Grid.Column="0" Margin="1" Name="name_lbl" Content="Name:"/>
+        <TextBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="name_box"/>
+
+        <Label Grid.Row="6" Grid.Column="0" Margin="1" Name="desc_lbl" Content="Description:"/>
+        <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Height="60" MaxWidth="600" Name="desc_box"
             TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
 
-        <Label Grid.Row="6" Grid.Column="0" Margin="1" Name="icon_lbl" Content="Icon:"/>
-        <TextBox Grid.Row="6" Grid.Column="1" Margin="1" Name="icon_box"/>
-        <Image Grid.Row="6" Grid.Column="2" Margin="1" Width="16" Height="16" Name="icon_img"/>
+        <Label Grid.Row="7" Grid.Column="0" Margin="1" Name="icon_lbl" Content="Icon:"/>
+        <TextBox Grid.Row="7" Grid.Column="1" Margin="1" Name="icon_box"/>
+        <Image Grid.Row="7" Grid.Column="2" Margin="1" Width="16" Height="16" Name="icon_img"/>
 
-        <Label Grid.Row="7" Grid.Column="0" Margin="1" Name="interval_lbl" Content="Update Interval:"/>
-        <TextBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="interval_box"/>
+        <Label Grid.Row="8" Grid.Column="0" Margin="1" Name="interval_lbl" Content="Update Interval:"/>
+        <TextBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="interval_box"/>
 
-        <Label Grid.Row="8" Grid.Column="0" Margin="1" Name="backload_lbl" Content="Back-Load:"/>
-        <CheckBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="backload_box"/>
+        <Label Grid.Row="9" Grid.Column="0" Margin="1" Name="backload_lbl" Content="Back-Load:"/>
+        <CheckBox Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="backload_box"/>
 
-        <Label Grid.Row="9" Grid.Column="0" Margin="1" Name="parent_lbl" Content="Parent:"/>
-        <TreeView Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="3" Margin="1" MinHeight="100" MaxHeight="200"
+        <Label Grid.Row="10" Grid.Column="0" Margin="1" Name="parent_lbl" Content="Parent:"/>
+        <TreeView Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="3" Margin="1" MinHeight="100" MaxHeight="200"
             ItemContainerStyle="{StaticResource TreeViewItemStyleStretch}" HorizontalContentAlignment="Stretch"
             SelectedValuePath="ident" Name="collections_lst">
             <TreeView.Resources>
@@ -311,7 +315,7 @@
             </TreeView.Resources>
         </TreeView>
 
-        <Grid Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="3">
+        <Grid Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>

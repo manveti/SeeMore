@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -41,6 +42,13 @@ namespace SeeMore {
         public MainWindow() {
             HttpUtils.userAgent = config.userAgent;
             this.InitializeComponent();
+        }
+
+        private void handle_close(object sender, CancelEventArgs e) {
+            if (this.view_manager != null) {
+                this.view_manager.running = false;
+                this.view_manager.updateEvent.Set();
+            }
         }
 
         //TODO: menu handlers
@@ -101,6 +109,7 @@ namespace SeeMore {
             this.feed_name_box.Content = (feedView == null ? "" : feedView.name);
             this.art_title_box.Content = (sel == null ? "" : sel.title);
             this.art_timestamp_box.Content = (sel == null ? "" : sel.timestamp);
+            this.art_url_box.Text = (sel == null ? "" : sel.article.url);
             this.art_open_but.IsEnabled = (sel != null);
             this.art_del_but.IsEnabled = (sel != null);
         }

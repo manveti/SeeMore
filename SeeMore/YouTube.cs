@@ -81,6 +81,20 @@ namespace SeeMore {
             return new YouTubeChannelMetadata(name, description, url, channelId, uploadsId, icon);
         }
 
+        public static YouTubeChannelMetadata getMetadataByPlaylistId(string playlistId) {
+            string channelId;
+            using (YouTubeService client = getYouTubeClient()) {
+                PlaylistsResource.ListRequest request = client.Playlists.List("snippet");
+                request.Id = playlistId;
+                PlaylistListResponse resp = request.Execute();
+                if ((resp.Items == null) || (resp.Items.Count <= 0)) {
+                    return null;
+                }
+                channelId = resp.Items[0].Snippet.ChannelId;
+            }
+            return getMetadataByChannelId(channelId);
+        }
+
         public static YouTubeChannelMetadata getMetadataFromVideo(string videoId) {
             // allow videoId to be a full video URL
             int idx = videoId.LastIndexOf('=');

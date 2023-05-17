@@ -36,6 +36,8 @@ namespace SeeMore {
             string type = (string)(this.type_box.SelectedValue);
             this.channel_id_lbl.Visibility = (type == TYPE_YOUTUBE_FEED ? Visibility.Visible : Visibility.Collapsed);
             this.channel_id_box.Visibility = (type == TYPE_YOUTUBE_FEED ? Visibility.Visible : Visibility.Collapsed);
+            this.uploads_id_lbl.Visibility = (type == TYPE_YOUTUBE_FEED ? Visibility.Visible : Visibility.Collapsed);
+            this.uploads_id_box.Visibility = (type == TYPE_YOUTUBE_FEED ? Visibility.Visible : Visibility.Collapsed);
             this.video_id_lbl.Visibility = (type == TYPE_YOUTUBE_FEED ? Visibility.Visible : Visibility.Collapsed);
             this.video_id_box.Visibility = (type == TYPE_YOUTUBE_FEED ? Visibility.Visible : Visibility.Collapsed);
             this.url_lbl.Visibility = (type != TYPE_COLLECTION ? Visibility.Visible : Visibility.Collapsed);
@@ -51,6 +53,7 @@ namespace SeeMore {
         private void load_details(object sender, RoutedEventArgs e) {
             string type = (string)(this.type_box.SelectedValue);
             string channelId = this.channel_id_box.Text;
+            string uploadsId = this.uploads_id_box.Text;
             string videoId = this.video_id_box.Text;
             string url = this.url_box.Text;
             string iconPath = this.icon_box.Text;
@@ -64,11 +67,14 @@ namespace SeeMore {
                 metadata = HtmlFeed.getMetadata(url);
                 break;
             case TYPE_YOUTUBE_FEED:
-                if (this.channel_id_box.Text.Length > 0) {
-                    metadata = YouTubeFeed.getMetadataByChannelId(this.channel_id_box.Text);
+                if (channelId.Length > 0) {
+                    metadata = YouTubeFeed.getMetadataByChannelId(channelId);
                 }
-                else if (this.video_id_box.Text.Length > 0) {
-                    metadata = YouTubeFeed.getMetadataFromVideo(this.video_id_box.Text);
+                else if (uploadsId.Length > 0) {
+                    metadata = YouTubeFeed.getMetadataByPlaylistId(uploadsId);
+                }
+                else if (videoId.Length > 0) {
+                    metadata = YouTubeFeed.getMetadataFromVideo(videoId);
                 }
                 else {
                     metadata = YouTubeFeed.getMetadata(url);
@@ -92,6 +98,7 @@ namespace SeeMore {
                 this.url_box.Text = metadata.url;
                 YouTubeChannelMetadata youTubeMetadata = (YouTubeChannelMetadata)metadata;
                 this.channel_id_box.Text = youTubeMetadata.channelId;
+                this.uploads_id_box.Text = youTubeMetadata.uploadsId;
             }
         }
 

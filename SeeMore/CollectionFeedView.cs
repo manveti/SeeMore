@@ -48,6 +48,7 @@ namespace SeeMore {
             }
         }
         public ObservableCollection<CollectionFeedView> children { get => this._children; }
+        public abstract Guid? parent { get; }
 
         public CollectionFeedView(Guid guid) {
             this.guid = guid;
@@ -93,6 +94,7 @@ namespace SeeMore {
                 this.set_icon();
             }
         }
+        public override Guid? parent { get => this.collection.parent; }
 
         public CollectionView(Guid guid, Collection collection) : base(guid) {
             this.collection = collection;
@@ -140,6 +142,7 @@ namespace SeeMore {
                 this.set_icon();
             }
         }
+        public override Guid? parent { get => this.feed.metadata.collection; }
 
         public FeedView(Guid guid, Feed feed) : base(guid) {
             this.feed = feed;
