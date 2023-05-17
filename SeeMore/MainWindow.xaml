@@ -367,7 +367,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <Image Grid.Row="0" Grid.Column="0" Margin="1" Name="feed_icon"/>
+            <Image Grid.Row="0" Grid.Column="0" MaxWidth="24" MaxHeight="24" Margin="1" Name="feed_icon"/>
             <Label Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="1" Name="feed_name_box"/>
             <Label Grid.Row="0" Grid.Column="3" Margin="1" Name="art_timestamp_box"/>
 
