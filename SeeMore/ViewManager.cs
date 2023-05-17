@@ -22,7 +22,7 @@ namespace SeeMore {
         private Dictionary<Guid, Feed> guidToFeed;
         private List<Guid> priorityUpdates;
         public CollectionFeedView selectedColl = null;
-        private List<ArticleView> collectionArticles = null;
+        private ObservableCollection<ArticleView> collectionArticles = null;
         public ArticleView selectedArt = null;
         public bool running = true;
         public AutoResetEvent updateEvent;
@@ -337,7 +337,7 @@ namespace SeeMore {
                             break;
                         }
                     }
-                    this.collectionArticles = articles;
+                    this.collectionArticles = new ObservableCollection<ArticleView>(articles);
                     this.selectedArt = null;
                 }
             }
@@ -441,7 +441,7 @@ namespace SeeMore {
                 List<ArticleView> articles = new List<ArticleView>();
                 this.populateArticles(articles, sel);
                 articles.Sort((x, y) => this.artviewCompare(x, y));
-                this.collectionArticles = articles;
+                this.collectionArticles = new ObservableCollection<ArticleView>(articles);
                 this.window.art_list.ItemsSource = articles;
             }
             return true;
@@ -777,5 +777,35 @@ namespace SeeMore {
         }
 
         //TODO: remove item
+
+        public void deleteArticle(ArticleView artView) {
+            lock (this.indexLock) {
+                FeedView feedView = (FeedView)(this.guidToCollectionFeedView[artView.feed]);
+                feedView.feed.deleteArticle(artView.guid);
+                if ((this.collectionArticles == null) || (this.collectionArticles.Count <= 0)) {
+                    return;
+                }
+                // update UI
+                int idx = -1;
+                for (int i = 0; i < this.collectionArticles.Count; i++) {
+                    if (this.collectionArticles[i].guid == artView.guid) {
+                        idx = i;
+                        break;
+                    }
+                }
+                if (idx < 0) {
+                    return;
+                }
+                int selIdx = this.window.art_list.SelectedIndex;
+                this.collectionArticles.RemoveAt(idx);
+                this.window.art_list.ItemsSource = this.collectionArticles;
+                if (selIdx >= this.collectionArticles.Count) {
+                    selIdx -= 1;
+                }
+                if (selIdx >= 0) {
+                    this.window.art_list.SelectedIndex = selIdx;
+                }
+            }
+        }
     }
 }

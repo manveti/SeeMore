@@ -42,6 +42,12 @@ namespace SeeMore {
         public MainWindow() {
             HttpUtils.userAgent = config.userAgent;
             this.InitializeComponent();
+            string dataDir = config.dataDir;
+            if (dataDir == null) {
+                dataDir = Path.Join(Directory.GetCurrentDirectory(), "feeds");
+            }
+            this.view_manager = new ViewManager(this, dataDir);
+            this.view_manager.load();
         }
 
         private void handle_close(object sender, CancelEventArgs e) {
@@ -81,7 +87,7 @@ namespace SeeMore {
             this.coll_desc_box.Text = (sel == null ? "" : sel.description);
             FeedView feed = sel as FeedView;
             DateTimeOffset? updated = feed?.feed?.metadata?.lastUpdated;
-            this.coll_updated_box.Content = (updated == null ? "" : ((DateTimeOffset)updated).ToString("G"));
+            this.coll_updated_box.Content = (updated == null ? "" : ((DateTimeOffset)updated).ToLocalTime().ToString("G"));
         }
 
         private void coll_add(object sender, RoutedEventArgs e) {
@@ -157,7 +163,7 @@ namespace SeeMore {
             if (articleView == null) {
                 return;
             }
-            //TODO: delete articleView
+            this.view_manager.deleteArticle(articleView);
         }
 
         public void hide_article_content() {

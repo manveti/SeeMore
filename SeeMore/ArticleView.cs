@@ -7,7 +7,7 @@ namespace SeeMore {
         public Article article;
 
         public string timestamp {
-            get => this.article.timestamp.ToString("G");
+            get => this.article.timestamp.ToLocalTime().ToString("G");
         }
         public string title {
             get => this.article.title;
