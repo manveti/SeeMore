@@ -133,7 +133,7 @@ namespace SeeMore {
             List<FeedView> feedViews = new List<FeedView>();
             foreach (Guid key in index.feeds.Keys) {
                 string feedPath = this.getFeedPath(key, dataDir);
-                Feed feed = new Feed(feedPath, index.feeds[key]);
+                Feed feed = index.feeds[key].constructFeed(feedPath);
                 guidToFeed[key] = feed;
                 FeedView feedView = new FeedView(key, feed);
                 feed.loadArticles();
@@ -175,6 +175,7 @@ namespace SeeMore {
                 this.selectedArt = null;
                 this.window.coll_list.ItemsSource = new ObservableCollection<CollectionFeedView> { allColl };
             }
+            this.updateEvent.Set();
         }
 
         private void saveIndex() {
