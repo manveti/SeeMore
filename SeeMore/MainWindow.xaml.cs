@@ -102,7 +102,11 @@ namespace SeeMore {
             this.view_manager.moveItem();
         }
 
-        //TODO: coll_remove, coll_update
+        //TODO: coll_remove
+
+        private void coll_update(object sender, RoutedEventArgs e) {
+            this.view_manager.updateItem();
+        }
 
         private void art_list_sel_changed(object sender, RoutedEventArgs e) {
             ArticleView prevSel = this.view_manager.selectedArt;

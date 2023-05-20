@@ -785,6 +785,34 @@ namespace SeeMore {
 
         //TODO: remove item
 
+        private bool updateItemHelper(CollectionFeedView item) {
+            // NOTE: caller must hold indexLock
+            bool updated = false;
+            if (item.children != null) {
+                foreach (CollectionFeedView child in item.children) {
+                    updated = updated || this.updateItemHelper(child);
+                }
+            }
+            if ((item is FeedView) && (!this.priorityUpdates.Contains(item.guid))) {
+                this.priorityUpdates.Add(item.guid);
+                updated = true;
+            }
+            return updated;
+        }
+
+        public void updateItem() {
+            bool doUpdate = false;
+            lock (this.indexLock) {
+                if (this.selectedColl == null) {
+                    return;
+                }
+                doUpdate = this.updateItemHelper(this.selectedColl);
+            }
+            if (doUpdate) {
+                this.updateEvent.Set();
+            }
+        }
+
         public void deleteArticle(ArticleView artView) {
             lock (this.indexLock) {
                 CollectionFeedView collectionFeedView = this.guidToCollectionFeedView[artView.feed];
